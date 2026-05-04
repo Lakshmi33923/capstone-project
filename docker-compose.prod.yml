@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  nodejs:
+    image: 988698481528.dkr.ecr.ap-south-1.amazonaws.com/task-manager-nodejs:latest
+    container_name: task-nodejs
+    environment:
+      - BACKEND_NAME=Node.js
+    ports:
+      - "3001:3001"
+    networks:
+      - task-network
+    restart: unless-stopped
+
+  fastapi:
+    image: 988698481528.dkr.ecr.ap-south-1.amazonaws.com/task-manager-fastapi:latest
+    container_name: task-fastapi
+    environment:
+      - BACKEND_NAME=FastAPI
+    ports:
+      - "8000:8000"
+    networks:
+      - task-network
+    restart: unless-stopped
+
+  springboot:
+    image: 988698481528.dkr.ecr.ap-south-1.amazonaws.com/task-manager-springboot:latest
+    container_name: task-springboot
+    environment:
+      - BACKEND_NAME=SpringBoot
+    ports:
+      - "8080:8080"
+    networks:
+      - task-network
+    restart: unless-stopped
+
+  dotnet:
+    image: 988698481528.dkr.ecr.ap-south-1.amazonaws.com/task-manager-dotnet:latest
+    container_name: task-dotnet
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+      - BACKEND_NAME=.NET
+    ports:
+      - "5000:5000"
+    networks:
+      - task-network
+    restart: unless-stopped
+
+  nginx:
+    image: 988698481528.dkr.ecr.ap-south-1.amazonaws.com/task-manager-nginx:latest
+    container_name: task-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - nodejs
+      - fastapi
+      - springboot
+      - dotnet
+    networks:
+      - task-network
+    restart: unless-stopped
+
+networks:
+  task-network:
+    driver: bridge

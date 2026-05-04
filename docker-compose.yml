@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: task-mysql
+    env_file:
+      - ./backend/.env
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: rootpass123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - task-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass123"]
+      timeout: 20s
+      retries: 10
+
+  nodejs:
+    build: ./backend/nodejs
+    container_name: task-nodejs
+    env_file:
+      - ./backend/.env
+    environment:
+      - BACKEND_NAME=Node.js
+    ports:
+      - "8001:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - task-network
+
+  fastapi:
+    build: ./backend/fastapi
+    container_name: task-fastapi
+    env_file:
+      - ./backend/.env
+    environment:
+      - BACKEND_NAME=FastAPI
+    ports:
+      - "8002:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - task-network
+
+  springboot:
+    build: ./backend/springboot
+    container_name: task-springboot
+    env_file:
+      - ./backend/.env
+    environment:
+      - BACKEND_NAME=SpringBoot
+      - DB_URL=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true
+    ports:
+      - "8003:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - task-network
+
+  dotnet:
+    build: ./backend/dotnet
+    container_name: task-dotnet
+    env_file:
+      - ./backend/.env
+    environment:
+      - BACKEND_NAME=.NET
+    ports:
+      - "8004:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - task-network
+
+  nginx:
+    build: ./nginx
+    container_name: task-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - nodejs
+      - fastapi
+      - springboot
+      - dotnet
+    networks:
+      - task-network
+
+networks:
+  task-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
